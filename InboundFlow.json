@@ -1,0 +1,233 @@
+{
+    "modules": [
+      {
+        "id": "7bd1cd56-e077-4234-b18e-33d4c71fc3ee",
+        "type": "SetVoice",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "0dac39d6-58b7-43e3-8a8f-90763dede352"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "GlobalVoice",
+            "value": "Matthew"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 59,
+            "y": 187
+          },
+          "overrideConsoleVoice": false,
+          "defaultVoice": "Conversational"
+        }
+      },
+      {
+        "id": "0dac39d6-58b7-43e3-8a8f-90763dede352",
+        "type": "SetRecordingBehavior",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "423598e9-044f-4558-8cfd-9ad93279c070"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "RecordingBehaviorOption",
+            "value": "Enable"
+          },
+          {
+            "name": "RecordingParticipantOption",
+            "value": "Both"
+          },
+          {
+            "name": "AnalyticsBehaviorOption",
+            "value": "Enable"
+          },
+          {
+            "name": "AnalyticsLanguageLocaleCode",
+            "value": "en-US",
+            "namespace": null
+          },
+          {
+            "name": "AnalyticsCustomVocabulary",
+            "value": "None"
+          },
+          {
+            "name": "AnalyticsRedactionOption",
+            "value": "Enable"
+          },
+          {
+            "name": "AnalyticsRedactionPolicy",
+            "value": "RedactedAndOriginal",
+            "namespace": null
+          },
+          {
+            "name": "AnalyticsMode",
+            "value": "RealTime"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 59,
+            "y": 382
+          }
+        }
+      },
+      {
+        "id": "002fac90-75db-4890-be54-02aa9521d8aa",
+        "type": "Disconnect",
+        "branches": [],
+        "parameters": [],
+        "metadata": {
+          "position": {
+            "x": 1124,
+            "y": 277
+          }
+        }
+      },
+      {
+        "id": "f57ce9d5-ca6d-473d-a5ad-f3f0fe881d91",
+        "type": "Transfer",
+        "branches": [
+          {
+            "condition": "AtCapacity",
+            "transition": "002fac90-75db-4890-be54-02aa9521d8aa"
+          },
+          {
+            "condition": "Error",
+            "transition": "002fac90-75db-4890-be54-02aa9521d8aa"
+          }
+        ],
+        "parameters": [],
+        "metadata": {
+          "position": {
+            "x": 1087,
+            "y": 47
+          },
+          "useDynamic": false,
+          "queue": null
+        },
+        "target": "Queue"
+      },
+      {
+        "id": "7ade87ca-cbd3-45b2-af1b-65714e90442b",
+        "type": "SetEventHook",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f57ce9d5-ca6d-473d-a5ad-f3f0fe881d91"
+          },
+          {
+            "condition": "Error",
+            "transition": "f57ce9d5-ca6d-473d-a5ad-f3f0fe881d91"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Type",
+            "value": "CustomerQueue"
+          },
+          {
+            "name": "ContactFlowId",
+            "value": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/contact-flow/61ec93a8-ca46-4c2c-b0c6-bdc05d0dad29",
+            "resourceName": "A Demo - EWTQueue"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 839,
+            "y": 43
+          },
+          "contactFlow": {
+            "id": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/contact-flow/61ec93a8-ca46-4c2c-b0c6-bdc05d0dad29",
+            "text": "A Demo - EWTQueue"
+          },
+          "customerOrAgent": true,
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "423598e9-044f-4558-8cfd-9ad93279c070",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "4bbfede1-32c4-4f2c-9634-c9c71ae673c0"
+          },
+          {
+            "condition": "Error",
+            "transition": "4bbfede1-32c4-4f2c-9634-c9c71ae673c0"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Thank you for contacting us. One moment while I connect you to an agent.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 341,
+            "y": 42
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "4bbfede1-32c4-4f2c-9634-c9c71ae673c0",
+        "type": "SetQueue",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "7ade87ca-cbd3-45b2-af1b-65714e90442b"
+          },
+          {
+            "condition": "Error",
+            "transition": "7ade87ca-cbd3-45b2-af1b-65714e90442b"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Queue",
+            "value": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/queue/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "namespace": null,
+            "resourceName": "BasicQueue"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 591,
+            "y": 42
+          },
+          "useDynamic": false,
+          "queue": {
+            "id": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/queue/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "text": "BasicQueue"
+          }
+        }
+      }
+    ],
+    "version": "1",
+    "start": "7bd1cd56-e077-4234-b18e-33d4c71fc3ee",
+    "metadata": {
+      "entryPointPosition": {
+        "x": 58,
+        "y": 15
+      },
+      "snapToGrid": false,
+      "name": "A Demo - Direct to Agent with EWTQueue",
+      "description": null,
+      "type": "contactFlow",
+      "status": "published",
+      "hash": "74d4a085e074d66c4c582819a7fa820e58ebd3611f72788b50ebbfe9f9afb2eb"
+    },
+    "type": "contactFlow"
+  }

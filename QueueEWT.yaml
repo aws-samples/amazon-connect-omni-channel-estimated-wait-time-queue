@@ -1,0 +1,215 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Amazon Connect - Omni-channel Estimated Wait Time in Queue Blog CLoudformation Template
+Parameters:
+  AmazonConnectInstanceId:
+    Type: String
+    AllowedPattern: '\w{8}-\w{4}-\w{4}-\w{4}-\w{12}'
+    ConstraintDescription: Invalid Amazon Connect instance Id
+    Default: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    Description: >-
+      Amazon Connect Instance ID (Example 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' ).
+  Hours:
+    Type: Number
+    Default: 2
+    Description: >-
+      Hours Data to use to get Average Answer Time (Default- 2 Hours) 
+  DynamodbName:
+    Type: String
+    Default: QueueTable
+    Description: >-
+      Dynamodb Table Name 
+  DynamodbRefreshMin:
+    Type: Number
+    Default: 1
+    Description: >-
+      Dynamodb Queue Data refresh rate
+Resources:
+  DynamodbTableName:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: queueId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: queueId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Ref DynamodbName
+  LambdaConnectQueueEWTRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: connectMetrics
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'connect:GetMetricData'
+                Resource: !Sub 'arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${AmazonConnectInstanceId}/queue/*'
+        - PolicyName: dynamodb
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Query'
+                Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbName}'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  LambdaConnectQueueEWT:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: connect-queue-ewt-function
+      Role: !GetAtt LambdaConnectQueueEWTRole.Arn
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Environment: 
+        Variables:
+          INSTANCEID: !Ref AmazonConnectInstanceId
+          HOURS: !Ref Hours    
+          QUEUETABLE: !Ref DynamodbName    
+          DYNAMODBMIN: !Ref DynamodbRefreshMin    
+      Code:
+        ZipFile: |  
+            const AWS = require('aws-sdk');
+            const connect = new AWS.Connect();
+            const docClient = new AWS.DynamoDB.DocumentClient({
+            	apiVersion: '2012-08-10',
+              sslEnabled: false,
+              paramValidation: false,
+              convertResponseTypes: false
+            });
+            const tableName = process.env.QUEUETABLE;
+            const dynamodbMin = process.env.DYNAMODBMIN;
+            exports.handler = async function (event, context, callback) {
+                console.log('INPUT -  ', JSON.stringify(event));
+                let result = {};   
+                let hoursData = process.env.HOURS
+                let channel = event['Details']['Parameters']['channel'];
+                let queueId = getQueueId(event['Details']['Parameters']['queueARN']);
+                let queueAnswerTime = 1;
+                let item = await getQueueInfo(queueId);
+                console.log('item: ' ,item );
+                if(item && item.timestamp){
+                  let minutes = parseInt((Date.now() - item.timestamp)/(1000*60));
+                  console.log('dynamodb data saved difference in minutes: ' ,minutes );
+                  if(minutes>dynamodbMin){
+                    queueAnswerTime = await getMetrics(queueId, hoursData, channel);
+                    await saveQueueInfo(queueId, queueAnswerTime, Number(Date.now()));
+                  }
+                  else{
+                    queueAnswerTime = item.queueAnswerTime;
+                  }
+                }else{
+                  //If no data exist in Dynamodb , Fetch and Save 
+                  queueAnswerTime = await getMetrics(queueId, hoursData, channel);
+                  await saveQueueInfo(queueId, queueAnswerTime, Number(Date.now()));
+                }
+                result['QUEUE_ANSWER_TIME']=queueAnswerTime;
+                console.log('result: ' ,result );
+                callback(null, result);
+              };
+            async function getMetrics(queueId, hoursData, channel) {
+                let instanceId = process.env.INSTANCEID
+
+                let queueAnswerTime = 1;
+                try {
+                    let GetMetricDataCommandInput = {};
+                    GetMetricDataCommandInput.InstanceId = instanceId;
+                    GetMetricDataCommandInput.EndTime = getEndTime();
+                    GetMetricDataCommandInput.StartTime = getStartTime(hoursData);
+                    let Filters = {};
+                    let Channels = [];
+                    Channels.push(channel);
+                    let Queues = [];
+                    Queues.push(queueId);
+                    Filters.Queues = Queues;
+                    GetMetricDataCommandInput.Filters = Filters;
+                    let HistoricalMetrics  = [];
+                    let HistoricalMetricsData = {};
+                    HistoricalMetricsData.Name = 'QUEUE_ANSWER_TIME';
+                    HistoricalMetricsData.Statistic = 'AVG';
+                    HistoricalMetricsData.Unit = 'SECONDS';
+                    HistoricalMetrics.push(HistoricalMetricsData);
+                    GetMetricDataCommandInput.HistoricalMetrics = HistoricalMetrics;
+                    let Groupings = [];
+                    Groupings.push('QUEUE');
+                    GetMetricDataCommandInput.Groupings = Groupings;
+                    console.log(GetMetricDataCommandInput);
+                    
+                    let response = await connect.getMetricData(GetMetricDataCommandInput).promise();
+                    if(response && response.MetricResults && response.MetricResults[0]){
+                      let queueMetric = response.MetricResults[0].Collections[0].Metric.Name;
+                      let queueMetricValue = response.MetricResults[0].Collections[0].Value;
+                      console.log(queueMetric, queueMetricValue);
+                      if(queueMetricValue > 60){
+                        queueMetricValue = Math.ceil(queueMetricValue/60);
+                      }
+                      queueAnswerTime=queueMetricValue;
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+                return queueAnswerTime;
+            }
+            function getQueueId(queueARN){
+                let queueId = '';
+                if(queueARN){
+                    let n = queueARN.lastIndexOf('/');
+                    queueId = queueARN.substring(n + 1);
+                }
+                return queueId;
+            }
+            function getStartTime(hoursData){
+                let startDate = new Date();
+                startDate.setMinutes(startDate.getMinutes() - startDate.getMinutes()%5);
+                startDate.setHours(startDate.getHours() - hoursData);
+                startDate.setSeconds(0);
+                startDate.setMilliseconds(0);
+                return startDate;
+            }
+            function getEndTime(){
+                let endDate = new Date();
+                endDate.setMinutes(endDate.getMinutes() - endDate.getMinutes()%5);
+                endDate.setSeconds(0);
+                endDate.setMilliseconds(0);
+                return endDate;
+            }
+            async function saveQueueInfo(queueId, queueAnswerTime, timestamp) {
+              let inputTextToDB = '{"queueId": "' + queueId +
+                  '","queueAnswerTime": "' + queueAnswerTime +
+                      '","timestamp" : "' + timestamp + '"}';
+              let paramsIns = {
+                TableName: tableName,
+                Item: JSON.parse(inputTextToDB)
+              };
+              const response = await docClient.put(paramsIns).promise();
+              return response;
+            }
+            async function getQueueInfo(queueId) {
+              let item = {};
+              let params = {
+                TableName : tableName,
+                KeyConditionExpression: "#queueId = :queueId",
+                ExpressionAttributeNames:{
+                  "#queueId": "queueId"
+                },
+                ExpressionAttributeValues: {
+                  ":queueId": queueId
+                }
+              };
+              let queueInfo = await docClient.query(params).promise();
+              if(queueInfo && queueInfo.Items && queueInfo.Items[0]){
+                item = queueInfo.Items[0];
+              }
+              return item;
+            }

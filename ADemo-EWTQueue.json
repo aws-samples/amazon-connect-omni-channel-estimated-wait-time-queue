@@ -1,0 +1,594 @@
+{
+    "modules": [
+      {
+        "id": "c18c408f-4568-43ce-9fc8-3913ed87007c",
+        "type": "GetMetricData",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "7c402933-c6ab-408e-bc22-af75d426e2a6"
+          },
+          {
+            "condition": "Error",
+            "transition": "83069306-9f93-4bba-af74-d55c69e04926"
+          }
+        ],
+        "parameters": [],
+        "metadata": {
+          "position": {
+            "x": 686,
+            "y": 49.505951058892975
+          },
+          "useDynamic": false,
+          "queue": null
+        }
+      },
+      {
+        "id": "7c402933-c6ab-408e-bc22-af75d426e2a6",
+        "type": "InvokeExternalResource",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "6672dad9-354c-476d-a3dd-3dde893f08bc"
+          },
+          {
+            "condition": "Error",
+            "transition": "12957161-f429-4c17-9635-c05082670a9b"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "FunctionArn",
+            "value": "arn:aws:lambda:us-east-1:000000000000:function:connect-queue-ewt-function",
+            "namespace": null
+          },
+          {
+            "name": "TimeLimit",
+            "value": "3"
+          },
+          {
+            "name": "Parameter",
+            "key": "queueARN",
+            "value": "Metrics.Queue.ARN",
+            "namespace": "System"
+          },
+          {
+            "name": "Parameter",
+            "key": "channel",
+            "value": "Channel",
+            "namespace": "System"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 929,
+            "y": 47.505951058892975
+          },
+          "dynamicMetadata": {
+            "queueARN": true,
+            "channel": true
+          },
+          "useDynamic": false
+        },
+        "target": "Lambda"
+      },
+      {
+        "id": "4b6f2abe-1236-4736-9313-d57731754860",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "2c2c037b-50a0-4913-bc3b-de4b6e2f7b48"
+          },
+          {
+            "condition": "Error",
+            "transition": "2c2c037b-50a0-4913-bc3b-de4b6e2f7b48"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Your current estimated wait time is $.External.QUEUE_ANSWER_TIME minutes.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 942,
+            "y": 895
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "2c2c037b-50a0-4913-bc3b-de4b6e2f7b48",
+        "type": "Wait",
+        "branches": [
+          {
+            "condition": "Timeout",
+            "transition": "ac343338-252b-4015-9269-33f52f8f4510"
+          },
+          {
+            "condition": "Error",
+            "transition": "a82569ed-4f0c-4d3b-9c22-a15040d88737"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "TimeoutSeconds",
+            "value": "60"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 1180,
+            "y": 895
+          },
+          "useDynamic": false,
+          "timeoutUnit": {
+            "display": "Minutes",
+            "value": "minute"
+          }
+        }
+      },
+      {
+        "id": "a82569ed-4f0c-4d3b-9c22-a15040d88737",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "Error",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Something went wrong with Wait block. We will place you in queue now.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 1215,
+            "y": 1118
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "ee4f3ab8-c2b5-46c4-9121-94e5a0e4604f",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "Error",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Something went wrong with the Invoke Lambda block. We will place you in queue now.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 726,
+            "y": 1199
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "fdbf758a-3d9e-4deb-8b38-2397a8f7ef99",
+        "type": "InvokeExternalResource",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "4b6f2abe-1236-4736-9313-d57731754860"
+          },
+          {
+            "condition": "Error",
+            "transition": "ee4f3ab8-c2b5-46c4-9121-94e5a0e4604f"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "FunctionArn",
+            "value": "arn:aws:lambda:us-east-1:000000000000:function:connect-queue-ewt-function",
+            "namespace": null
+          },
+          {
+            "name": "TimeLimit",
+            "value": "3"
+          },
+          {
+            "name": "Parameter",
+            "key": "queueARN",
+            "value": "Metrics.Queue.ARN",
+            "namespace": "System"
+          },
+          {
+            "name": "Parameter",
+            "key": "channel",
+            "value": "Channel",
+            "namespace": "System"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 700,
+            "y": 893
+          },
+          "dynamicMetadata": {
+            "queueARN": true,
+            "channel": true
+          },
+          "useDynamic": false
+        },
+        "target": "Lambda"
+      },
+      {
+        "id": "212cbad5-0c75-4a78-b030-0c23d038df65",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "Error",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Something went wrong with Get Queue Metrics block. We will place you in queue now.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 492,
+            "y": 1280
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "a4781235-fd9b-4ca3-b7b8-041369f01d8e",
+        "type": "GetMetricData",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "fdbf758a-3d9e-4deb-8b38-2397a8f7ef99"
+          },
+          {
+            "condition": "Error",
+            "transition": "212cbad5-0c75-4a78-b030-0c23d038df65"
+          }
+        ],
+        "parameters": [],
+        "metadata": {
+          "position": {
+            "x": 457,
+            "y": 895
+          },
+          "useDynamic": false,
+          "queue": null
+        }
+      },
+      {
+        "id": "ac343338-252b-4015-9269-33f52f8f4510",
+        "type": "Loop",
+        "branches": [
+          {
+            "condition": "Looping",
+            "transition": "a4781235-fd9b-4ca3-b7b8-041369f01d8e"
+          },
+          {
+            "condition": "Complete",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "LoopCount",
+            "value": "10"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 455,
+            "y": 655
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "f74ff1c9-11aa-488b-93f9-88f40397d5e7",
+        "type": "Resume",
+        "branches": [],
+        "parameters": [],
+        "metadata": {
+          "position": {
+            "x": 1636,
+            "y": 704
+          }
+        }
+      },
+      {
+        "id": "6672dad9-354c-476d-a3dd-3dde893f08bc",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "Error",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Your current estimated wait time is $.External.QUEUE_ANSWER_TIME minutes.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 1171,
+            "y": 49.505951058892975
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "12957161-f429-4c17-9635-c05082670a9b",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "Error",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Something went wrong with the Invoke Lambda block. We will place you in queue now.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 945,
+            "y": 281.0119021177859
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "83069306-9f93-4bba-af74-d55c69e04926",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "Error",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Something went wrong with Get Queue Metrics block. We will place you in queue now.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 681,
+            "y": 362.0119021177859
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "59a3fe14-4156-4c39-b05c-60b027390a1a",
+        "type": "PlayPrompt",
+        "branches": [
+          {
+            "condition": "Success",
+            "transition": "c18c408f-4568-43ce-9fc8-3913ed87007c"
+          },
+          {
+            "condition": "Error",
+            "transition": "c18c408f-4568-43ce-9fc8-3913ed87007c"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Text",
+            "value": "Your call is very important to us. Please continue to wait for the next available agent.",
+            "namespace": null
+          },
+          {
+            "name": "TextToSpeechType",
+            "value": "text"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 445,
+            "y": 47.505951058892975
+          },
+          "useDynamic": false
+        }
+      },
+      {
+        "id": "2f709092-2170-4381-b831-37665260173f",
+        "type": "CheckAttribute",
+        "branches": [
+          {
+            "condition": "Evaluate",
+            "conditionType": "Equals",
+            "conditionValue": "CHAT",
+            "transition": "ac343338-252b-4015-9269-33f52f8f4510"
+          },
+          {
+            "condition": "Evaluate",
+            "conditionType": "Equals",
+            "conditionValue": "TASK",
+            "transition": "f74ff1c9-11aa-488b-93f9-88f40397d5e7"
+          },
+          {
+            "condition": "NoMatch",
+            "transition": "59a3fe14-4156-4c39-b05c-60b027390a1a"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Attribute",
+            "value": "Channel"
+          },
+          {
+            "name": "Namespace",
+            "value": "System"
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 107,
+            "y": 432
+          },
+          "conditionMetadata": [
+            {
+              "operator": {
+                "name": "Equals",
+                "value": "Equals",
+                "shortDisplay": "="
+              },
+              "value": "CHAT",
+              "id": "32816105-0d67-4a32-8c35-ea863069316b"
+            },
+            {
+              "operator": {
+                "name": "Equals",
+                "value": "Equals",
+                "shortDisplay": "="
+              },
+              "value": "TASK",
+              "id": "23ff4987-4e70-44d1-b03d-2ec510ff2962"
+            }
+          ]
+        }
+      },
+      {
+        "id": "597d02c5-5a79-4d51-bad8-12c396611736",
+        "type": "LoopPrompts",
+        "branches": [
+          {
+            "condition": "Timeout",
+            "transition": "59a3fe14-4156-4c39-b05c-60b027390a1a"
+          },
+          {
+            "condition": "Error",
+            "transition": "2f709092-2170-4381-b831-37665260173f"
+          }
+        ],
+        "parameters": [
+          {
+            "name": "AudioPrompt",
+            "value": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/prompt/0185ab39-b651-46f3-adbb-1d9ce4d4d7e6",
+            "resourceName": "Music_Jazz_MyTimetoFly_Inst.wav"
+          },
+          {
+            "name": "InterruptSeconds",
+            "value": 30
+          }
+        ],
+        "metadata": {
+          "position": {
+            "x": 197,
+            "y": 46
+          },
+          "audio": [
+            {
+              "id": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/prompt/0185ab39-b651-46f3-adbb-1d9ce4d4d7e6",
+              "text": "Music_Jazz_MyTimetoFly_Inst.wav",
+              "type": "Prompt",
+              "prompt": {
+                "id": "arn:aws:connect:us-west-2:000000000000:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/prompt/0185ab39-b651-46f3-adbb-1d9ce4d4d7e6",
+                "text": "Music_Jazz_MyTimetoFly_Inst.wav"
+              },
+              "$$hashKey": "object:134"
+            }
+          ],
+          "timeoutUnit": {
+            "display": "Seconds",
+            "value": "sec"
+          }
+        }
+      }
+    ],
+    "version": "1",
+    "start": "597d02c5-5a79-4d51-bad8-12c396611736",
+    "metadata": {
+      "entryPointPosition": {
+        "x": 48,
+        "y": 46
+      },
+      "snapToGrid": false,
+      "name": "A Demo - EWTQueue",
+      "description": null,
+      "type": "customerQueue",
+      "status": "published",
+      "hash": "1ba60e1072ecdced7abac30c38f78577d48b57650e2601acc0958bd3ceccf5ea"
+    },
+    "type": "customerQueue"
+  }
